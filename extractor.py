@@ -23,22 +23,26 @@ class Handler(FileSystemEventHandler):
 
     def handle_file(self, file):
         # Read JSON file
+        print('Loading file ...')
         data = json.loads(open(file).read())
+        print('Done.')
 
+        print('Determine ACME version')
         # Determine ACME version
         try:
-            acme_version = 2 if 'acme-v02' in data['Account']['Registration']['uri'] else 1
+            acme_version = 2 if 'acme-v02' in data['prod']['Account']['Registration']['uri'] else 1
         except TypeError:
             if 'DomainsCertificate' in data:
                 acme_version = 1
             else:
                 acme_version = 2
 
+        print('Find certificates')
         # Find certificates
         if acme_version == 1:
-            certs = data['DomainsCertificate']['Certs']
+            certs = data['prod']['DomainsCertificate']['Certs']
         elif acme_version == 2:
-            certs = data['Certificates']
+            certs = data['prod']['Certificates']
 
         print('Certificate storage contains ' + str(len(certs)) + ' certificates')
 
@@ -50,10 +54,10 @@ class Handler(FileSystemEventHandler):
                 fullchain = c['Certificate']['Certificate']
                 sans = c['Domains']['SANs']
             elif acme_version == 2:
-                name = c['Domain']['Main']
-                privatekey = c['Key']
-                fullchain = c['Certificate']
-                sans = c['Domain']['SANs']
+                name = c['domain']['main']
+                privatekey = c['key']
+                fullchain = c['certificate']
+                sans = c['domain']['sans']
 
             # Decode private key, certificate and chain
             privatekey = b64decode(privatekey).decode('utf-8')
